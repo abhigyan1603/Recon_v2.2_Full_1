@@ -1,0 +1,13 @@
+{
+  "name": "reconv2-controller",
+  "version": "2.3.0",
+  "private": true,
+  "description": "ReconV2 robot controller (Capacitor Android wrapper around www/index.html)",
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

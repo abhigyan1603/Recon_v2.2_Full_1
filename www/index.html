@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ReconV2 Controller</title>
+<style>
+:root{--ground:#E4E6E1;--panel:#F3F4F0;--ink:#17262B;--muted:#5D6B6F;--line:#BFC4BD;--link:#0F6E6E;--arm:#E5B800;--stop:#B83A24;--ok:#2E7D4F;
+font-family:"Avenir Next","Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--ground:#14201F;--panel:#1C2B2A;--ink:#E7ECE6;--muted:#93A4A0;--line:#304341;--link:#4FC3B5;--arm:#F0C419;--stop:#E2573F;--ok:#5CC48A}}
+*{box-sizing:border-box;touch-action:none;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink)}
+body{display:grid;grid-template-rows:auto 1fr;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:17px;margin:0}.sp{flex:1}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--stop)}.dot.on{background:var(--ok)}
+#status{font-size:13px;color:var(--muted)}
+.bat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.batbox{position:relative;width:34px;height:16px;border:2px solid var(--ink);border-radius:3px;padding:1px}
+.batbox::after{content:"";position:absolute;right:-5px;top:3px;width:3px;height:6px;background:var(--ink);border-radius:0 2px 2px 0}
+.batfill{display:block;height:100%;width:0;background:var(--ok);border-radius:1px;transition:width .4s}
+input[type=text],input[type=number]{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px;touch-action:auto;user-select:text;width:100%}
+button{font:inherit;font-size:14px;font-weight:600;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:active{transform:scale(.97)}button:disabled{opacity:.5}
+button:focus-visible,input:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+button.danger{background:var(--stop);border-color:var(--stop);color:#fff}
+main{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;overflow:auto;align-content:start}
+@media (max-width:720px){main{grid-template-columns:1fr}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{margin:0;font-size:14px;color:var(--muted)}
+.stickwrap{display:grid;place-items:center}
+.stick{position:relative;width:min(100%,250px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,var(--ground) 0 62%,var(--line) 63% 64%,var(--ground) 65%);border:2px solid var(--line)}
+.stick::before,.stick::after{content:"";position:absolute;background:var(--line)}
+.stick::before{left:50%;top:8%;bottom:8%;width:1px}.stick::after{top:50%;left:8%;right:8%;height:1px}
+.knob{position:absolute;left:50%;top:50%;width:34%;height:34%;margin:-17% 0 0 -17%;border-radius:50%;background:var(--ink);border:4px solid var(--arm);z-index:2}
+.stick.servo .knob{border-color:var(--link)}
+.readout{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}.readout b{color:var(--ink)}
+.row{display:grid;gap:4px}.row label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}.row label b{color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--link);height:28px;touch-action:auto}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.claw{font-size:20px;padding:20px 10px;background:var(--arm);border-color:var(--arm);color:#17262B}
+.claw:disabled{background:var(--panel);color:var(--muted);border-color:var(--line)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cell{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--ground);min-width:0}
+.cell small{display:block;color:var(--muted);font-size:12px}
+.cell .big{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.cell .sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.5}
+.cell .warn{color:var(--stop);font-size:12px;font-weight:600}
+.cell.off{opacity:.55}
+.degin{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.att{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center}
+.att svg{width:110px;height:110px}
+details summary{cursor:pointer;font-size:14px;color:var(--muted);touch-action:auto}
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;font-size:13px}
+.cfg label{display:grid;gap:3px;color:var(--muted)}
+.chk{display:flex!important;align-items:center;gap:6px;grid-template-columns:none}.chk input{width:auto;touch-action:auto}
+.note{font-size:12px;color:var(--muted);margin:6px 0 0}
+#log{font-size:12px;color:var(--muted);min-height:1.2em}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span><h1>ReconV2</h1><span id="status">Disconnected</span><span class="sp"></span>
+  <span class="bat" title="Battery"><span class="batbox"><span class="batfill" id="batfill"></span></span><span id="batpct">–</span><span id="batv" style="color:var(--muted);font-weight:400"></span></span>
+  <input type="text" id="host" value="192.168.4.1" style="width:130px" aria-label="Robot address" inputmode="decimal">
+  <button id="connect">Connect</button>
+  <button class="danger" id="stop">STOP</button>
+</header>
+<main>
+  <section>
+    <h2>Drive (differential)</h2>
+    <div class="stickwrap"><div class="stick" id="stick"><div class="knob"></div></div></div>
+    <div class="readout"><span>Left <b id="lv">0</b></span><span>Right <b id="rv">0</b></span></div>
+    <div class="row"><label>Max speed <b id="maxv">255</b></label><input type="range" id="max" min="30" max="255" value="255"></div>
+  </section>
+
+  <section>
+    <h2>Servos (ST3215) — X: servo 1 · Y: servo 2</h2>
+    <div class="stickwrap"><div class="stick servo" id="sstick"><div class="knob"></div></div></div>
+    <div class="grid2" id="srv"></div>
+    <div class="btns"><button id="scenter">Center both</button><button id="storque">Torque: ON</button></div>
+  </section>
+
+  <section>
+    <h2>Claw</h2>
+    <div class="degin"><span>Degrees per press</span><input type="number" id="deg" value="10" min="1" max="720" step="1"></div>
+    <div class="btns"><button class="claw" id="clawMinus">− 10°</button><button class="claw" id="clawPlus">+ 10°</button></div>
+    <div class="readout"><span id="clawState">Ready</span><button id="clawStop" style="padding:6px 12px">Stop claw</button></div>
+    <div class="grid2" id="clawCells"></div>
+  </section>
+
+  <section>
+    <h2>IMU (BMI270)</h2>
+    <div class="att">
+      <svg viewBox="-55 -55 110 110" aria-label="Attitude">
+        <defs><clipPath id="clip"><circle r="50"/></clipPath></defs>
+        <g clip-path="url(#clip)"><g id="horizon">
+          <rect x="-120" y="-120" width="240" height="120" fill="#4FA3D9"/>
+          <rect x="-120" y="0" width="240" height="120" fill="#8B6A3E"/>
+          <line x1="-120" y1="0" x2="120" y2="0" stroke="#fff" stroke-width="1.5"/>
+        </g></g>
+        <circle r="50" fill="none" stroke="var(--line)" stroke-width="2"/>
+        <path d="M-28 0 H-10 L-5 6 L0 0 L5 6 L10 0 H28" fill="none" stroke="var(--arm)" stroke-width="3"/>
+      </svg>
+      <div class="grid3">
+        <div class="cell"><small>Roll</small><div class="big" id="ir">–</div></div>
+        <div class="cell"><small>Pitch</small><div class="big" id="ip">–</div></div>
+        <div class="cell"><small>Yaw</small><div class="big" id="iy">–</div></div>
+      </div>
+    </div>
+    <div class="readout"><span>Accel g <b id="iacc">–</b></span></div>
+    <div class="readout"><span>Gyro °/s <b id="igyr">–</b></span></div>
+    <div class="readout"><span id="imuState"></span><button id="yaw0" style="padding:6px 12px">Zero yaw</button></div>
+  </section>
+
+  <section>
+    <h2>Encoders</h2>
+    <div class="grid2" id="enc"></div>
+    <button id="enc0">Reset encoders to 0</button>
+  </section>
+
+  <section>
+    <details><summary>Settings</summary>
+      <div class="cfg">
+        <label>Claw counts / output rev<input type="number" id="cpr" value="1400" min="20" max="20000"></label>
+        <label>Servo speed (°/s at full stick)<input type="number" id="srate" value="90" min="5" max="360"></label>
+        <label>Claw min PWM<input type="number" id="pmin" value="70" min="0" max="255"></label>
+        <label>Claw max PWM<input type="number" id="pmax" value="200" min="0" max="255"></label>
+        <label>Servo 1 ID (X axis)<input type="number" id="s1" value="1" min="0" max="253"></label>
+        <label>Servo 2 ID (Y axis)<input type="number" id="s2" value="2" min="0" max="253"></label>
+        <label class="chk"><input type="checkbox" id="invL"> Reverse claw L (M3)</label>
+        <label class="chk"><input type="checkbox" id="invR"> Reverse claw R (M1)</label>
+      </div>
+      <p class="note">Counts per output rev: turn the claw shaft one full turn by hand and read its tick count. N20: 7 PPR × 4 × gear ratio (1:50 → 1400).</p>
+      <h2 style="margin-top:12px">Change a servo's ID</h2>
+      <p class="note">New ST3215s all ship as ID 1. Plug in ONE servo only, then set it to 2.</p>
+      <div class="cfg">
+        <label>Current ID<input type="number" id="sidFrom" value="1" min="0" max="253"></label>
+        <label>New ID<input type="number" id="sidTo" value="2" min="0" max="253"></label>
+      </div>
+      <button id="sidGo" style="margin-top:8px;width:100%">Write new ID</button>
+    </details>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fx=(v,d=1)=>(typeof v==='number'&&isFinite(v))?v.toFixed(d):'–';
+const App={
+  ws:null,want:false,timer:null,retry:null,features:[],
+  register(f){this.features.push(f)},
+  send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o))},
+  store:{get(k,d){try{const v=localStorage.getItem('rc_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('rc_'+k,JSON.stringify(v))}catch(e){}}},
+  log(t){$('log').textContent=t},
+  connect(){
+    clearTimeout(this.retry);const host=$('host').value.trim()||'192.168.4.1';this.store.set('host',host);
+    status('Connecting…',false);
+    try{this.ws=new WebSocket(`ws://${host}/ws`)}catch(e){status('Invalid address',false);return}
+    this.ws.onopen=()=>{status('Connected to '+host,true);$('connect').textContent='Disconnect';this.log('');
+      this.features.forEach(f=>{try{f.onOpen&&f.onOpen()}catch(e){console.error(e)}});
+      clearInterval(this.timer);let last=performance.now();
+      this.timer=setInterval(()=>{const n=performance.now(),dt=(n-last)/1000;last=n;
+        this.features.forEach(f=>{try{f.tick&&f.tick(dt)}catch(e){console.error(e)}})},50)};
+    this.ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
+      /* each panel isolated: one bad field can't freeze the others */
+      this.features.forEach(f=>{try{f.onMessage&&f.onMessage(m)}catch(err){console.error(err)}})};
+    this.ws.onclose=()=>{clearInterval(this.timer);status(this.want?'Connection lost, retrying…':'Disconnected',false);
+      $('connect').textContent=this.want?'Disconnect':'Connect';if(this.want)this.retry=setTimeout(()=>this.connect(),1500)};
+    this.ws.onerror=()=>this.log('Join Wi-Fi ESP32_Robot_AP first, then check the address.');
+  }
+};
+function status(t,on){$('status').textContent=t;$('dot').classList.toggle('on',on)}
+$('host').value=App.store.get('host','192.168.4.1');
+$('connect').onclick=()=>{if(App.want){App.want=false;App.send({t:'drive',l:0,r:0});App.ws&&App.ws.close();clearTimeout(App.retry)}else{App.want=true;App.connect()}};
+
+/* reusable joystick: onSet(x,y) with x,y in -1..1, springs back to centre */
+function makeStick(el,onSet){
+  const knob=el.querySelector('.knob');let id=null;
+  const set=(x,y)=>{knob.style.transform=`translate(${x*145}%,${-y*145}%)`;onSet(x,y)};
+  const calc=e=>{const r=el.getBoundingClientRect(),R=r.width/2*.62;let x=(e.clientX-(r.left+r.width/2))/R,y=-(e.clientY-(r.top+r.height/2))/R;
+    const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}if(m<.08){x=0;y=0}set(x,y)};
+  el.addEventListener('pointerdown',e=>{id=e.pointerId;el.setPointerCapture(id);calc(e)});
+  el.addEventListener('pointermove',e=>{if(e.pointerId===id)calc(e)});
+  const end=e=>{if(e.pointerId===id){id=null;set(0,0)}};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  return {set};
+}
+
+/* ===== Drive joystick (20 Hz stream, firmware has 300 ms failsafe) ===== */
+App.register({
+  l:0,r:0,
+  init(){
+    this.stick=makeStick($('stick'),(x,y)=>{const m=+$('max').value;
+      this.l=Math.round(clamp(y+x,-1,1)*m);this.r=Math.round(clamp(y-x,-1,1)*m);$('lv').textContent=this.l;$('rv').textContent=this.r});
+    $('max').oninput=e=>$('maxv').textContent=e.target.value;
+  },
+  tick(){App.send({t:'drive',l:this.l,r:this.r})}
+});
+
+/* ===== Servo joystick + feedback ===== */
+App.register({
+  x:0,y:0,torque:true,
+  init(){
+    this.stick=makeStick($('sstick'),(x,y)=>{this.x=x;this.y=y});
+    $('srv').innerHTML=[1,2].map(n=>`<div class="cell" id="sc${n}"><small>Servo ${n} · ID <span id="sid${n}">–</span></small>
+      <div class="big" id="sd${n}">–</div><div class="sub" id="ss${n}">no data</div><div class="warn" id="sw${n}"></div></div>`).join('');
+    $('scenter').onclick=()=>App.send({t:'srvc',a:'center'});
+    $('storque').onclick=()=>App.send({t:'srvc',a:'torque',on:!this.torque});
+  },
+  tick(){App.send({t:'srv',x:Math.round(this.x*1000),y:Math.round(this.y*1000)})},
+  onMessage(m){
+    if(m.t==='log'){App.log(m.m);return}
+    if(m.t!=='tel'||!Array.isArray(m.srv))return;
+    m.srv.forEach((s,i)=>{const n=i+1;
+      $('sid'+n).textContent=s.id;
+      $('sc'+n).classList.toggle('off',!s.ok);
+      $('sd'+n).textContent=s.ok?`${fx(s.deg)}°`:'–';
+      $('ss'+n).innerHTML=s.ok?`target ${fx(s.tgt)}° · ${s.spd} st/s<br>load ${fx(s.load)}% · ${fx(s.v)} V · ${s.temp} °C`:'no reply';
+      $('sw'+n).textContent=s.ok?'':`No answer from ID ${s.id}`});
+    if(typeof m.torque==='boolean'){this.torque=m.torque;$('storque').textContent='Torque: '+(m.torque?'ON':'OFF')}
+  }
+});
+
+/* ===== Claw: −X° / +X° with custom degrees ===== */
+App.register({
+  init(){
+    const d=App.store.get('deg',10);$('deg').value=d;this.label();
+    $('deg').oninput=()=>{App.store.set('deg',+$('deg').value);this.label()};
+    const go=s=>{const d=Math.abs(+$('deg').value)||0;if(d>0)App.send({t:'claw',deg:s*d})};
+    $('clawPlus').onclick=()=>go(1);$('clawMinus').onclick=()=>go(-1);
+    $('clawStop').onclick=()=>App.send({t:'clawstop'});
+    $('clawCells').innerHTML=['Claw L · M3 (J5)','Claw R · M1 (J3)'].map((n,i)=>
+      `<div class="cell"><small>${n}</small><div class="big" id="cd${i}">–</div><div class="warn" id="ce${i}"></div></div>`).join('');
+  },
+  label(){const d=Math.abs(+$('deg').value)||0;$('clawPlus').textContent=`+ ${d}°`;$('clawMinus').textContent=`− ${d}°`},
+  onMessage(m){
+    if(m.t!=='tel'||!m.claw)return;
+    $('clawState').textContent=m.claw.busy?'Moving…':'Ready';
+    (m.claw.deg||[]).forEach((v,i)=>$('cd'+i).textContent=`${fx(v)}°`);
+    (m.claw.err||[]).forEach((v,i)=>$('ce'+i).textContent=v||'');
+  }
+});
+
+/* ===== Encoders ===== */
+App.register({
+  names:['Drive L · M0 (J2)','Claw R · M1 (J3)','Drive R · M2 (J4)','Claw L · M3 (J5)'],
+  init(){
+    $('enc').innerHTML=this.names.map((n,i)=>
+      `<div class="cell"><small>${n}</small><div class="big" id="e${i}">0</div><div class="sub" id="es${i}">–</div></div>`).join('');
+    $('enc0').onclick=()=>App.send({t:'enc0'});
+  },
+  onMessage(m){
+    if(m.t!=='tel'||!Array.isArray(m.enc))return;
+    const cpr=+$('cpr').value||1400;
+    m.enc.forEach((v,i)=>{$('e'+i).textContent=v;
+      const s=Array.isArray(m.spd)?m.spd[i]:0;
+      $('es'+i).textContent=`${fx(v/cpr*360,1)}° · ${s} cnt/s`});
+  }
+});
+
+/* ===== IMU ===== */
+App.register({
+  init(){$('yaw0').onclick=()=>App.send({t:'yaw0'})},
+  onMessage(m){
+    if(m.t!=='tel'||!m.imu)return;const i=m.imu;
+    if(!i.ok){$('imuState').textContent='BMI270 not detected';return}
+    $('imuState').textContent='';
+    $('ir').textContent=fx(i.r)+'°';$('ip').textContent=fx(i.p)+'°';$('iy').textContent=fx(i.y)+'°';
+    $('iacc').textContent=`${fx(i.ax,2)} / ${fx(i.ay,2)} / ${fx(i.az,2)}`;
+    $('igyr').textContent=`${fx(i.gx)} / ${fx(i.gy)} / ${fx(i.gz)}`;
+    $('horizon').setAttribute('transform',`rotate(${-i.r}) translate(0 ${clamp(i.p,-45,45)})`);
+  }
+});
+
+/* ===== Battery + driver fault ===== */
+App.register({
+  onMessage(m){
+    if(m.t!=='tel')return;
+    if(m.bat){const p=clamp(m.bat.pct|0,0,100);
+      $('batpct').textContent=p+'%';$('batv').textContent=fx(m.bat.v,2)+' V';
+      const f=$('batfill');f.style.width=p+'%';f.style.background=p<20?'var(--stop)':p<40?'var(--arm)':'var(--ok)'}
+    if(m.fault)App.log(`Motor driver fault 0x${m.fault.toString(16)} (auto-cleared)`);
+  }
+});
+
+/* ===== Settings ===== */
+App.register({
+  ids:['cpr','pmin','pmax','s1','s2','srate'],
+  init(){
+    const c=App.store.get('cfg',{cpr:1400,pmin:70,pmax:200,s1:1,s2:2,srate:90,invL:false,invR:false});
+    this.ids.forEach(k=>{if(c[k]!==undefined)$(k).value=c[k]});$('invL').checked=!!c.invL;$('invR').checked=!!c.invR;
+    this.save=()=>{const o={};this.ids.forEach(k=>o[k]=+$(k).value);o.invL=$('invL').checked;o.invR=$('invR').checked;
+      App.store.set('cfg',o);App.send({t:'cfg',...o})};
+    this.ids.concat(['invL','invR']).forEach(k=>$(k).onchange=this.save);
+    $('sidGo').onclick=()=>{const f=+$('sidFrom').value,t=+$('sidTo').value;
+      if(f===t)return App.log('New ID must differ.');
+      if(confirm(`Only ONE servo must be connected.\nChange ID ${f} → ${t}?`)){App.send({t:'sid',from:f,to:t});App.log('Writing ID…')}};
+  },
+  onOpen(){this.save()}
+});
+
+/* ===== Global STOP ===== */
+const stopAll=()=>{App.features.forEach(f=>f.stick&&f.stick.set(0,0));App.send({t:'drive',l:0,r:0});App.send({t:'clawstop'});App.send({t:'srv',x:0,y:0})};
+$('stop').onclick=stopAll;
+addEventListener('blur',stopAll);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAll()});
+
+App.features.forEach(f=>{try{f.init&&f.init()}catch(e){console.error(e)}});
+</script>
+</body>
+</html>
